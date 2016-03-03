@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        "use strict";
+    
+        var canvas;
+        var ctx;
+        //our websocket connection
+        var socket; 
+		var draws = {};
+		
+        var square = {
+            lastUpdate: new Date().getTime(),
+            x: Math.random() * 300, //x position of our square
+            y: Math.random() * 300, //y position of our square
+            height: 100, //height of our square
+            width: 100 //width of our square
+        };
+        
+
+
+        //redraw our square to the screen
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            //draw our updated square
+			var keys = Object.keys(draws);
+			for(var i = 0; i < keys.length;i++)
+			{
+				var drawCall = draws[keys[i]];
+				console.log(draws);
+				ctx.fillRect(drawCall.x, drawCall.y, drawCall.width, drawCall.height);
+			}
+        }
+
+        function update(data) {
+
+            draws = data.data;
+            //redraw new data to the screen
+            draw();
+        }
+		function setCalls()
+		{
+			var time = new Date().getTime();
+			draws[time] = {x: Math.random() * 300, y: Math.random() * 300, width: 100, height: 100};
+	
+			var coords = {x:0,y:0,width:100, height:100};
+			socket.emit('initial',{time: time, coords: draws[time]});
+		}
+		
+		function handleMessage(data)
+		{
+			draws[data.time] = data.coords;
+			draw();
+		}
+
+        function init() {
+            canvas = document.querySelector("#canvas");
+            ctx = canvas.getContext("2d");
+        
+            socket = io.connect();
+			
+            //When the socket connects successfully
+            socket.on('connect', function () {
+			 setCalls();		
+            });      
+
+            socket.on('update', function(data)
+			{
+				draws = data.data;
+				draw();
+			});
+        }
+
+      window.onload = init;
+    </script>
+</head>
+<body>
+    <canvas id="canvas" height="500" width="500">Please use an HTML 5 browser</canvas>
+</body>
+</html>
